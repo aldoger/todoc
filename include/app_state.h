@@ -1,12 +1,12 @@
-#ifndef app_state_h
-#define app_state_h
+#ifndef APP_STATE_H
+#define APP_STATE_H
+#include "todo.h"
 
-#define MAX_NOTES 10
-#define NOTES_LEN 256
+#define MAX_TODOS 100 // a normal human cannot handle 100 todos to be honest
 
 typedef struct {
-    char notes[MAX_NOTES][NOTES_LEN];
-    int notes_count;
+    Todo todos[MAX_TODOS];
+    int total_todos;
 } AppState;
 
 #endif

@@ -1,7 +1,6 @@
-#ifndef context_h
-#define context_h
+#ifndef CONTEXT_H
+#define CONTEXT_H
 
-#include "app_state.h"
 #include <json-c/json.h>
 
 typedef struct {
@@ -9,6 +8,6 @@ typedef struct {
 
     struct json_object *obj;
     struct AppState *app;
-} RequestContext;
+} Context;
 
 #endif
