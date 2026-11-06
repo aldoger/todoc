@@ -5,9 +5,9 @@
 
 typedef void (*HandlerFn)(Context *ctx);
 
-struct Handler {
+typedef struct {
     char route[64];
     HandlerFn handler;
-};
+} Handler;
 
 #endif
