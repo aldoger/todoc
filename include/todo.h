@@ -5,7 +5,7 @@
 
 typedef struct {
     int priority;
-    char desc[MAX_TODO_WORD];
+    const char *desc;
 } Todo;
 
 #endif

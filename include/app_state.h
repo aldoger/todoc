@@ -6,7 +6,7 @@
 
 typedef struct {
     Todo todos[MAX_TODOS];
-    int total_todos;
+    int todo_count;
 } AppState;
 
 #endif

@@ -10,6 +10,7 @@
 
 #define INITIAL_TOTAL_HANDLERS 10
 #define AMOUNT_ADD_HANDLER 10
+#define BUFFER_SIZE 1600
 
 Server server_constructor(
     int domain,

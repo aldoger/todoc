@@ -6,8 +6,6 @@
 #include "handler.h"
 #include "app_state.h"
 
-#define BUFFER_SIZE 16000
-
 typedef struct {
     const int *domain;
     const int *port;

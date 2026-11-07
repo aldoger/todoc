@@ -1,91 +1,128 @@
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
 #include "include/server.h"
+#include "include/response.h"
+#include "include/context.h"
+#include "include/app_state.h"
 
-void hello_handler(RequestContext *ctx) {
-    const char *body = "Hello from /hello\n";
+#include <json-c/json.h>
 
-    char response[256];
-    snprintf(response, sizeof(response),
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %zu\r\n\r\n"
-        "%s",
-        strlen(body),
-        body
-    );
+void get_todos(Context *ctx)
+{
+    AppState *app = ctx->app;
 
-    write(ctx->client_fd, response, strlen(response));
-}
-
-void print_notes(RequestContext *ctx) {
-    AppState *app = (AppState *)ctx->app;
-
-    char body[1024];
-    int offset = 0;
-
-    offset += snprintf(body + offset, sizeof(body) - offset,
-                       "Notes:\n");
-
-    for (int i = 0; i < app->notes_count; i++) {
-        offset += snprintf(body + offset, sizeof(body) - offset,
-                           "- %s\n", app->notes[i]);
-    }
-
-    char response[2048];
-    int resp_len = snprintf(response, sizeof(response),
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %d\r\n"
-        "\r\n"
-        "%s",
-        offset, body
-    );
-
-    write(ctx->client_fd, response, resp_len);
-}
-
-void add_notes(RequestContext *ctx) {
-    AppState *app = (AppState *)ctx->app;
-
-    char body[1024];
-    int offset = 0;
-
-    offset += snprintf(body + offset, sizeof(body) - offset, "Response:\n");
-
-    if(app->notes_count > MAX_NOTES) {
-        char response[2048];
-        int resp_len = snprintf(response, sizeof(response),
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: %d\r\n"
-            "\r\n"
-            "%s",
-            offset, body
+    if (app == NULL) {
+        Response *res = create_response(
+            NULL,
+            HTTP_INTERNAL_SERVER_ERROR,
+            "Application state is unavailable"
         );
-        offset += snprintf(body + offset, sizeof(body) - offset, "Maximum note capacity reach, cannot add more notes\n");
-        write(ctx->client_fd, response, resp_len);
+
+        if (res != NULL) {
+            send_response_data(ctx->client_fd, res);
+            destroy_response(res);
+        }
+
         return;
     }
-}
 
+    struct json_object *todos_json = json_object_new_array();
 
-int main() {
-    static AppState app = {
-        .notes = {
-            "First note",
-            "Second note"
-        },
-        .notes_count = 2
-    };
+    if (todos_json == NULL) {
+        return;
+    }
 
-    struct Server server = server_constructor(
-        AF_INET, 8000, SOCK_STREAM, 0, 10, INADDR_ANY, launch, &app
+    for (size_t i = 0; i < app->todo_count; i++) {
+        Todo *todo = &app->todos[i];
+
+        struct json_object *todo_json = json_object_new_object();
+
+        if (todo_json == NULL) {
+            json_object_put(todos_json);
+            return;
+        }
+
+        json_object_object_add(
+            todo_json,
+            "priority",
+            json_object_new_int(todo->priority)
+        );
+
+        json_object_object_add(
+            todo_json,
+            "desc",
+            json_object_new_string(todo->desc ? todo->desc : "")
+        );
+
+        json_object_array_add(todos_json, todo_json);
+    }
+
+    Response *res = create_response(
+        todos_json,
+        HTTP_OK,
+        "Todos retrieved successfully"
     );
 
-    server_add_handler(&server, "/hello", hello_handler);
-    server_add_handler(&server, "/notes", print_notes);
+    // Release our reference. Response maintains its own reference.
+    json_object_put(todos_json);
 
+    if (res == NULL) {
+        return;
+    }
+
+    send_response_data(ctx->client_fd, res);
+
+    destroy_response(res);
+}
+
+int main(void)
+{
+    // Initialize Todo data.
+    Todo todo1 = {
+        .priority = 1,
+        .desc = "wash dishes"
+    };
+
+    Todo todo2 = {
+        .priority = 2,
+        .desc = "clean bedroom"
+    };
+
+    Todo todos[] = {
+        todo1,
+        todo2
+    };
+
+    // Initialize application state.
+    AppState app_state = {
+        .todos = todos,
+        .todo_count = sizeof(todos) / sizeof(todos[0])
+    };
+
+    // Initialize server.
+    Server server = server_constructor(
+        AF_INET,
+        8080,
+        SOCK_STREAM,
+        0,
+        10,
+        INADDR_ANY,
+        launch,
+        &app_state
+    );
+
+    // Register routes.
+    server_add_handler(
+        &server,
+        "/todos",
+        get_todos
+    );
+
+    printf("Server listening on port 8080...\n");
+
+    // Start server.
     server.launch(&server);
+
+    // Cleanup after server stops.
+    server_destroy(&server);
+
+    return 0;
 }
