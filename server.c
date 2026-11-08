@@ -221,3 +221,20 @@ void server_add_handler(
 
     server->handler_count++;
 }
+
+void server_destroy(Server *server)
+{
+    if (server == NULL) {
+        return;
+    }
+
+    if (server->socket >= 0) {
+        close(server->socket);
+        server->socket = -1;
+    }
+
+    free(server->handlers);
+    server->handlers = NULL;
+    server->handler_count = 0;
+    server->handler_capacity = 0;
+}

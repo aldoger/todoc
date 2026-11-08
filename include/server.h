@@ -6,12 +6,14 @@
 #include "handler.h"
 #include "app_state.h"
 
-typedef struct {
-    const int *domain;
-    const int *port;
-    const int *service;
-    const int *protocol;
-    const int *backlog;
+typedef struct Server Server;
+
+struct Server {
+    int domain;
+    int port;
+    int service;
+    int protocol;
+    int backlog;
     __u_long interface;
 
     int socket;
@@ -24,7 +26,7 @@ typedef struct {
     void (*launch)(Server *server);
 
     AppState *app_state;
-} Server;
+};
 
 Server server_constructor(
     int domain,

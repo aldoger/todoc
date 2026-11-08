@@ -4,6 +4,7 @@
 #include "include/app_state.h"
 
 #include <json-c/json.h>
+#include <stdio.h>
 
 void get_todos(Context *ctx)
 {
@@ -93,9 +94,12 @@ int main(void)
 
     // Initialize application state.
     AppState app_state = {
-        .todos = todos,
         .todo_count = sizeof(todos) / sizeof(todos[0])
     };
+
+    for (size_t i = 0; i < app_state.todo_count; i++) {
+        app_state.todos[i] = todos[i];
+    }
 
     // Initialize server.
     Server server = server_constructor(
